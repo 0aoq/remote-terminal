@@ -4,6 +4,7 @@ import { FitAddon } from "xterm-addon-fit";
 import xtermCSS from "xterm/css/xterm.css";
 import * as command from "./command/execute";
 import xterm from "xterm";
+import { json } from "stream/consumers";
 
 // define theme
 function hslToHex(h, s, l) {
@@ -38,6 +39,25 @@ const theme = {
 
     // misc
     black: hslToHex(themeBase.h, themeBase.s, 14),
+    brightBlack: "#709080",
+
+    magenta: "#DC8CC3",
+    brightMagenta: "#EC93D3",
+
+    green: "#60B48A",
+    brightGreen: "#72D5A3",
+
+    blue: "#9AB8D7",
+    brightBlue: "#94BFF3",
+
+    cyan: "#8CD0D3",
+    brightCyan: "#93E0E3",
+
+    yellow: "#DFAF8F",
+    brightYellow: "#F0DFAF",
+
+    red: "#705050",
+    brightRed: "#DCA3A3",
 };
 
 // create terminal
@@ -60,12 +80,25 @@ terminal.loadAddon(fitAddon);
 
 terminal.loadAddon(new WebLinksAddon());
 
+// utility functions
 function ab2s(buffer) {
     let array = new Uint8Array(buffer);
     let string = String.fromCharCode.apply(String, array);
     return string;
 }
 
+function b2ab(buffer) {
+    const ab = new ArrayBuffer(buffer.length);
+    const view = new Uint8Array(ab);
+
+    for (let i = 0; i < buffer.length; ++i) {
+        view[i] = buffer[i];
+    }
+
+    return ab;
+}
+
+// ws
 (async () => {
     // create connection
     const requestedPID = performance.now();
@@ -75,7 +108,7 @@ function ab2s(buffer) {
     if (!parseFloat(pid)) return; // PID is invalid
 
     console.log(`Terminal created! PID: ${pid}`);
-    document.title = `${pid} - Remote Terminal`
+    document.title = `${pid} - Remote Terminal`;
 
     fitAddon.fit();
 
@@ -112,11 +145,15 @@ function ab2s(buffer) {
                 " ┌ \x1b[1mInformation\x1b[0m ─────────────────────────────────────────────────────────┐",
                 "",
                 `    \x1b[1m\x1b[34mProcess ID \x1b[0m- ${pid}`,
-                `    \x1b[1m\x1b[32mHost \x1b[0m- ${window.location.host}`,
+                `    \x1b[1m\x1b[32mHost \x1b[0m- ${
+                    window.location.search.slice(1) === "electron"
+                        ? "Desktop"
+                        : window.location.host
+                }`,
                 `    \x1b[1m\x1b[33mTerminal Size \x1b[0m- ${terminal.rows}x${terminal.cols}`,
-                `    \x1b[1m\x1b[35mStarted \x1b[0m- ${new Date().toLocaleString()} (PID Response Time: ${
+                `    \x1b[1m\x1b[35mStarted \x1b[0m- ${new Date().toLocaleString()} (PID Response Time: ${Math.floor(
                     performance.now() - requestedPID
-                }ms)`,
+                )}ms)`,
                 "",
                 " └──────────────────────────────────────────────────────────────────────┘",
                 "",
@@ -134,12 +171,26 @@ function ab2s(buffer) {
 
         // handle socket message event
         socket.addEventListener("message", (ev) => {
-            // post data to terminal
-            const data = ev.data;
+            function runData(data) {
+                if (data.t === "PTY_DATA") {
+                    // post data to terminal
+                    data = data.d;
 
-            terminal.write(
-                typeof data === "string" ? data : ab2s(new Uint8Array(data))
-            );
+                    terminal.write(
+                        data.type === "Buffer" ? ab2s(b2ab(data.data)) : data
+                    );
+                } else if (data.t === "PTY_EXIT") {
+                    // handle exit (close page)
+                    window.close();
+                }
+            }
+
+            // after receiving \r a lot of messages get grouped together, this should separate them
+            for (let point of ab2s(ev.data).split('{"t":"PTY_')) {
+                if (point === "") continue;
+                point = `{"t":"PTY_${point}`;
+                runData(JSON.parse(point));
+            }
         });
     });
 

@@ -82,13 +82,28 @@ app.post("/api/terminals/:pid/edit/size", (request, response) => {
 app.ws("/api/terminals/:pid", function (ws, request) {
     let term = terminals[parseInt(request.params.pid)];
     console.log(`[EDIT TERMINAL] ${request.params.pid}.ws.status = open`);
-    ws.send(logs[term.pid]);
+
+    function s2uin16(string) {
+        return new Uint8Array(Buffer.from(string, "utf-8"));
+    }
+
+    ws.send(
+        s2uin16(
+            JSON.stringify({
+                t: "PTY_DATA",
+                d: logs[term.pid],
+            })
+        )
+    );
 
     // string message buffering
     function buffer(socket, timeout) {
         let s = "";
         let sender = null;
+
         return (data) => {
+            data = JSON.parse(data).d;
+
             s += data;
             if (!sender) {
                 sender = setTimeout(() => {
@@ -105,6 +120,7 @@ app.ws("/api/terminals/:pid", function (ws, request) {
         let buffer = [];
         let sender = null;
         let length = 0;
+
         return (data) => {
             buffer.push(data);
             length += data.length;
@@ -119,23 +135,39 @@ app.ws("/api/terminals/:pid", function (ws, request) {
         };
     }
 
-    const send = USE_BINARY ? bufferUtf8(ws, 5) : buffer(ws, 5);
+    const send = USE_BINARY ? bufferUtf8(ws, 0) : buffer(ws, 5);
 
-    // WARNING: This is a naive implementation that will not throttle the flow of data. This means
-    // it could flood the communication channel and make the terminal unresponsive. Learn more about
-    // the problem and how to implement flow control at https://xtermjs.org/docs/guides/flowcontrol/
+    // listen for data
     term.onData((data) => {
         try {
-            setTimeout(() => {
-                send(data);
-            }, 10);
+            send(
+                // convert the string to a Uint8Array first
+                s2uin16(
+                    JSON.stringify({
+                        t: "PTY_DATA",
+                        d: data.toString() // at this point "data" is a Buffer, convert it to a string before sending,
+                    })
+                )
+            );
         } catch (ex) {
             console.error(
-                `[ERROR TERMINAL] ${request.params.pid}.error - failed to load data on post`
+                `[ERROR TERMINAL] ${request.params.pid}.error - failed to load data on post...\n`,
+                ex
             );
 
             return;
         }
+    });
+
+    term.onExit(() => {
+        // handle exit
+        send(
+            s2uin16(
+                JSON.stringify({
+                    t: "PTY_EXIT",
+                })
+            )
+        );
     });
 
     ws.on("message", function (msg) {
@@ -166,4 +198,5 @@ app.get(/^\/(.*)/, async (request, response) => {
     });
 });
 
-app.listen(3000);
+console.log("\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Server started!\x1b[0m");
+app.listen(3057);

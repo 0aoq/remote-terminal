@@ -4,5 +4,5 @@ export default {
         const code = args.join(" ");
         new Function(code)();
         log("[CLIENTJS] Running client code!");
-    },
+    }
 };
