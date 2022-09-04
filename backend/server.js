@@ -32,6 +32,7 @@ app.post("/api/terminals", (request, response) => {
             cwd: process.platform === "win32" ? undefined : env.PWD,
             env: env,
             encoding: USE_BINARY ? null : "utf8",
+            handleFlowControl: true,
         }
     );
 
@@ -41,7 +42,7 @@ app.post("/api/terminals", (request, response) => {
     terminals[term.pid.toString()] = term;
     logs[term.pid.toString()] = "";
 
-    term.on("data", function (data) {
+    term.onData(function (data) {
         logs[term.pid] += data;
     });
 
@@ -57,7 +58,7 @@ app.post("/api/terminals/:pid/edit/size", (request, response) => {
         term = terminals[pid];
 
     term.resize(cols, rows);
-    console.log(`[EDIT TERMINAL] ${pid}.Size = ${rows}x${cols} (RxC)`);
+    console.log(`[EDIT TERMINAL] ${pid}.size = ${rows}x${cols} (RxC)`);
 
     // close
     response.end();
@@ -108,9 +109,11 @@ app.ws("/api/terminals/:pid", function (ws, request) {
     // WARNING: This is a naive implementation that will not throttle the flow of data. This means
     // it could flood the communication channel and make the terminal unresponsive. Learn more about
     // the problem and how to implement flow control at https://xtermjs.org/docs/guides/flowcontrol/
-    term.on("data", function (data) {
+    term.onData((data) => {
         try {
-            send(data);
+            setTimeout(() => {
+                send(data);
+            }, 10);
         } catch (ex) {
             console.error(
                 `[ERROR TERMINAL] ${request.params.pid}.error - failed to load data on post`

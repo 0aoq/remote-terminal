@@ -1,5 +1,4 @@
 import { WebLinksAddon } from "xterm-addon-web-links";
-import { AttachAddon } from "xterm-addon-attach";
 import { WebglAddon } from "xterm-addon-webgl";
 import { FitAddon } from "xterm-addon-fit";
 
@@ -44,8 +43,13 @@ const theme = {
 // create terminal
 const terminal = new xterm.Terminal({
     fontFamily: '"Cascadia Code", Menlo, monospace',
-    theme: theme,
+    rightClickSelectsWord: true,
+    altClickMovesCursor: true,
+    rendererType: "canvas",
     cursorBlink: true,
+    convertEol: true,
+    logLevel: "info",
+    theme: theme,
 });
 
 terminal.open(document.body);
@@ -56,8 +60,15 @@ terminal.loadAddon(fitAddon);
 terminal.loadAddon(new WebLinksAddon());
 terminal.loadAddon(new WebglAddon());
 
+function ab2s(buffer) {
+    let array = new Uint8Array(buffer);
+    let string = String.fromCharCode.apply(String, array);
+    return string;
+}
+
 (async () => {
     // create connection
+    const requestedPID = performance.now();
     const pid = await (
         await fetch("/api/terminals", { method: "POST" })
     ).text();
@@ -65,11 +76,16 @@ terminal.loadAddon(new WebglAddon());
 
     console.log(`Terminal created! PID: ${pid}`);
 
+    fitAddon.fit();
+
     // update size
     async function updateSize(size) {
-        await fetch(`/api/terminals/${pid}/edit/size?cols=${size.cols}&rows=${size.rows}`, {
-            method: "POST",
-        });
+        await fetch(
+            `/api/terminals/${pid}/edit/size?cols=${size.cols}&rows=${size.rows}`,
+            {
+                method: "POST",
+            }
+        );
     }
 
     terminal.onResize(updateSize);
@@ -79,19 +95,76 @@ terminal.loadAddon(new WebglAddon());
         `ws://${window.location.host}/api/terminals/${pid}`
     );
 
+    socket.binaryType = "arraybuffer";
+
     socket.addEventListener("open", () => {
         console.log("Connection established");
 
-        const attachAddon = new AttachAddon(socket, {
-            bidirectional: true,
-        });
+        // system messages
+        terminal.writeln(
+            [
+                " Connected to Remote Terminal, information is below!",
+                " \x1b[3mhttps://github.com/0aoq/remote-terminal\x1b[0m",
+                "",
+                " ┌ \x1b[1mInformation\x1b[0m ─────────────────────────────────────────────────────────┐",
+                "",
+                `    \x1b[1m\x1b[34mProcess ID \x1b[0m- ${pid}`,
+                `    \x1b[1m\x1b[32mHost \x1b[0m- ${window.location.host}`,
+                `    \x1b[1m\x1b[33mTerminal Size \x1b[0m- ${terminal.rows}x${terminal.cols}`,
+                `    \x1b[1m\x1b[35mStarted \x1b[0m- ${new Date().toLocaleString()} (PID Response Time: ${performance.now() - requestedPID}ms)`,
+                "",
+                " └──────────────────────────────────────────────────────────────────────┘",
+                "",
+            ].join("\n\r")
+        );
 
-        terminal.loadAddon(attachAddon);
+        let systemShell = "\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m";
+        terminal.writeln(
+            [
+                ` ${systemShell} Connection established (ws://)\x1b[0m`,
+                ` ${systemShell} Starting user shell\x1b[0m`,
+                "",
+            ].join("\r\n")
+        );
+
+        // handle socket message event
+        socket.addEventListener("message", (ev) => {
+            // post data to terminal
+            const data = ev.data;
+
+            terminal.write(
+                typeof data === "string" ? data : ab2s(new Uint8Array(data))
+            );
+        });
     });
 
     // data listener
-    terminal.onData((e) => {});
-    
+    let isFirstInput = true;
+    terminal.onData((data) => {
+        if (isFirstInput) {
+            fitAddon.fit();
+            terminal.clear();
+            isFirstInput = false;
+
+            fetch(`/api/terminals/${pid}/edit/size?rows=${terminal.rows}&cols=${terminal.cols}`, {
+                method: "POST"
+            })
+        }
+
+        // make sure socket is still open
+        if (socket.readyState !== 1) {
+            return;
+        }
+
+        // send data
+        const buffer = new Uint8Array(data.length);
+        for (let i = 0; i < data.length; ++i) {
+            buffer[i] = data.charCodeAt(i) & 255;
+        }
+
+        socket.send(buffer);
+    });
+
     // refit every 500ms
     setInterval(() => {
         fitAddon.fit();
