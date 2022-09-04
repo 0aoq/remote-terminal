@@ -74,6 +74,7 @@ const terminal = new xterm.Terminal({
 });
 
 terminal.open(document.body);
+terminal.focus();
 
 const fitAddon = new FitAddon();
 terminal.loadAddon(fitAddon);
