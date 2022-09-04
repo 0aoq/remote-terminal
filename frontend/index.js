@@ -92,7 +92,9 @@ function ab2s(buffer) {
 
     // socket
     const socket = new WebSocket(
-        `ws://${window.location.host}/api/terminals/${pid}`
+        `${window.location.protocol === "https:" ? "wss://" : "ws://"}${
+            window.location.host
+        }/api/terminals/${pid}`
     );
 
     socket.binaryType = "arraybuffer";
@@ -111,7 +113,9 @@ function ab2s(buffer) {
                 `    \x1b[1m\x1b[34mProcess ID \x1b[0m- ${pid}`,
                 `    \x1b[1m\x1b[32mHost \x1b[0m- ${window.location.host}`,
                 `    \x1b[1m\x1b[33mTerminal Size \x1b[0m- ${terminal.rows}x${terminal.cols}`,
-                `    \x1b[1m\x1b[35mStarted \x1b[0m- ${new Date().toLocaleString()} (PID Response Time: ${performance.now() - requestedPID}ms)`,
+                `    \x1b[1m\x1b[35mStarted \x1b[0m- ${new Date().toLocaleString()} (PID Response Time: ${
+                    performance.now() - requestedPID
+                }ms)`,
                 "",
                 " └──────────────────────────────────────────────────────────────────────┘",
                 "",
@@ -146,9 +150,12 @@ function ab2s(buffer) {
             terminal.clear();
             isFirstInput = false;
 
-            fetch(`/api/terminals/${pid}/edit/size?rows=${terminal.rows}&cols=${terminal.cols}`, {
-                method: "POST"
-            })
+            fetch(
+                `/api/terminals/${pid}/edit/size?rows=${terminal.rows}&cols=${terminal.cols}`,
+                {
+                    method: "POST",
+                }
+            );
         }
 
         // make sure socket is still open
