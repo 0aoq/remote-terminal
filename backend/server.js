@@ -16,9 +16,6 @@ let logs = {};
 const app = new express();
 ws(app);
 
-// create rt-log directory
-if (!fs.existsSync("rt-log/")) fs.mkdirSync("rt-log/");
-
 // terminal endpoints
 app.post("/api/terminals", (request, response) => {
     const env = Object.assign({}, process.env);
@@ -45,19 +42,12 @@ app.post("/api/terminals", (request, response) => {
     terminals[term.pid.toString()] = term;
     logs[term.pid.toString()] = "";
 
-    fs.writeFileSync(`rt-log/${term.pid}.log`, "");
-
     term.onData(function (data) {
         logs[term.pid] += data;
 
         // convert arraybuffer to string
         if (typeof data !== "string") {
             data = String.fromCharCode.apply(String, data);
-        }
-
-        // write to log
-        if (fs.existsSync(`rt-log/${term.pid}.log`)) {
-            fs.appendFileSync(`rt-log/${term.pid}.log`, data);
         }
     });
 
@@ -145,7 +135,7 @@ app.ws("/api/terminals/:pid", function (ws, request) {
                 s2uin16(
                     JSON.stringify({
                         t: "PTY_DATA",
-                        d: data.toString() // at this point "data" is a Buffer, convert it to a string before sending,
+                        d: data.toString(), // at this point "data" is a Buffer, convert it to a string before sending,
                     })
                 )
             );
@@ -177,7 +167,6 @@ app.ws("/api/terminals/:pid", function (ws, request) {
     ws.on("close", function () {
         term.kill();
         console.log(`[EDIT TERMINAL] ${request.params.pid}.ws.status = closed`);
-        fs.unlinkSync(`rt-log/${term.pid}.log`);
 
         // clean up
         delete terminals[term.pid];
