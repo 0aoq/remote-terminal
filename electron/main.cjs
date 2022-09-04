@@ -1,12 +1,17 @@
 const { app, BrowserWindow } = require("electron");
+const cm = require("electron-context-menu");
 const { exec } = require("child_process");
 const path = require("node:path");
-const url = require("node:url");
 
 let childprocess;
 
 function createWindow() {
-    // Create the browser window.
+    // create window
+    cm({
+        showSearchWithGoogle: false,
+        showInspectElement: false,
+    });
+
     const window = new BrowserWindow({
         width: 667, // 80 columns
         height: 457, // 25 rows
@@ -20,7 +25,7 @@ function createWindow() {
     // start backend
     childprocess = exec(
         `cd ${path.resolve(__dirname, "../")} && node backend/server.js`,
-        (error, stdout, stderr) => {
+        (error, stdout, stdetrr) => {
             console.log(`\n${error}`);
             console.log(`\n${stderr}`);
             console.log(`\n${stdout}`);
@@ -35,9 +40,7 @@ function createWindow() {
 
     setTimeout(() => {
         // give the server some time to load
-        console.log(
-            "\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Client loaded!\x1b[0m"
-        );
+        console.log("\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Client loaded!\x1b[0m");
 
         window.loadURL("http://localhost:3057/?electron");
     }, 150);
@@ -58,9 +61,7 @@ app.on("window-all-closed", function () {
         "\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Windows closed, terminating server process.\x1b[0m"
     );
 
-    console.log(
-        "\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Goodbye for now!\x1b[0m"
-    );
+    console.log("\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Goodbye for now!\x1b[0m");
 
     childprocess.kill();
 });
