@@ -1,5 +1,4 @@
 import { WebLinksAddon } from "xterm-addon-web-links";
-import { WebglAddon } from "xterm-addon-webgl";
 import { FitAddon } from "xterm-addon-fit";
 
 import xtermCSS from "xterm/css/xterm.css";
@@ -58,7 +57,6 @@ const fitAddon = new FitAddon();
 terminal.loadAddon(fitAddon);
 
 terminal.loadAddon(new WebLinksAddon());
-terminal.loadAddon(new WebglAddon());
 
 function ab2s(buffer) {
     let array = new Uint8Array(buffer);
