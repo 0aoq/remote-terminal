@@ -2,6 +2,7 @@ import { WebLinksAddon } from "xterm-addon-web-links";
 import { FitAddon } from "xterm-addon-fit";
 
 import xtermCSS from "xterm/css/xterm.css";
+import * as command from "./command/execute";
 import xterm from "xterm";
 
 // define theme
@@ -41,7 +42,7 @@ const theme = {
 
 // create terminal
 const terminal = new xterm.Terminal({
-    fontFamily: '"Cascadia Code", Menlo, monospace',
+    fontFamily: '"Source Code Pro", "Cascadia Code", Menlo, monospace',
     rightClickSelectsWord: true,
     altClickMovesCursor: true,
     rendererType: "canvas",
@@ -49,6 +50,7 @@ const terminal = new xterm.Terminal({
     convertEol: true,
     logLevel: "info",
     theme: theme,
+    fontSize: 14,
 });
 
 terminal.open(document.body);
@@ -73,6 +75,7 @@ function ab2s(buffer) {
     if (!parseFloat(pid)) return; // PID is invalid
 
     console.log(`Terminal created! PID: ${pid}`);
+    document.title = `${pid} - Remote Terminal`
 
     fitAddon.fit();
 
@@ -124,7 +127,7 @@ function ab2s(buffer) {
         terminal.writeln(
             [
                 ` ${systemShell} Connection established (ws://)\x1b[0m`,
-                ` ${systemShell} Starting user shell\x1b[0m`,
+                ` ${systemShell} Waiting for PTY...\x1b[0m`,
                 "",
             ].join("\r\n")
         );
@@ -142,6 +145,7 @@ function ab2s(buffer) {
 
     // data listener
     let isFirstInput = true;
+    let customCommandFound = false;
     terminal.onData((data) => {
         if (isFirstInput) {
             fitAddon.fit();
@@ -161,6 +165,20 @@ function ab2s(buffer) {
             return;
         }
 
+        // update command
+        if (data !== "\r") {
+            command.updateCommand(data);
+        } else {
+            customCommandFound = command.execute(terminal, socket);
+            command.clearCommand();
+        }
+
+        if (customCommandFound && data === "\r") {
+            // don't send to server if custom cmd is found
+            customCommandFound = false;
+            return;
+        }
+
         // send data
         const buffer = new Uint8Array(data.length);
         for (let i = 0; i < data.length; ++i) {
@@ -169,6 +187,16 @@ function ab2s(buffer) {
 
         socket.send(buffer);
     });
+
+    // get text area and listen for paste
+    document
+        .querySelector(".xterm-helper-textarea")
+        .addEventListener("paste", (e) => {
+            const clipboardData = e.clipboardData || window.clipboardData;
+
+            // update command
+            command.updateCommand(clipboardData.getData("Text"));
+        });
 
     // refit every 500ms
     setInterval(() => {
