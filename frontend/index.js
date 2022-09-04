@@ -66,6 +66,7 @@ const terminal = new xterm.Terminal({
     rightClickSelectsWord: true,
     altClickMovesCursor: true,
     rendererType: "canvas",
+    customGlyphs: true,
     cursorBlink: true,
     convertEol: true,
     logLevel: "info",
