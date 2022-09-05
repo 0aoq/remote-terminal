@@ -27,7 +27,7 @@ function createWindow() {
         `cd ${path.resolve(__dirname, "../")} && node backend/server.js`,
         (error, stdout, stdetrr) => {
             console.log(`\n${error}`);
-            console.log(`\n${stderr}`);
+            console.log(`\n${stdetrr}`);
             console.log(`\n${stdout}`);
         }
     );
