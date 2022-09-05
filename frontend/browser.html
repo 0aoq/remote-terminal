@@ -40,17 +40,6 @@
                     <button class="btn btn.primary mt-8" style="width: 100%;">Open</button>
                 </form>
             </details>
-
-            <details class="mt-2">
-                <summary>Open Page (Proxy)</summary>
-
-                <form id="url-builder-proxy">
-                    <p class="mt-4 mb-2"><b>URL</b></p>
-                    <input type="url" name="url" placeholder="URL">
-
-                    <button class="btn btn.primary mt-8" style="width: 100%;">Open</button>
-                </form>
-            </details>
         </card>
     </main>
 
@@ -61,16 +50,13 @@
             const url = new URL(e.target.url.value);
 
             // get the value of the inject page from the proxy
-            window.open(url.href);
-        })
-
-        document.getElementById("url-builder-proxy").addEventListener("submit", async (e) => {
-            e.preventDefault();
-
-            const url = new URL(e.target.url.value);
-
-            // get the value of the inject page from the proxy
-            window.open(`https://resolve.oxvs.net${url.pathname}?ophost=${url.host}`);
+            if (window.location.search.slice(1) !== "replace") {
+                window.open(url.href);
+                window.close();
+            } else[
+                // replace page
+                window.location.href = url.href
+            ]
         })
     </script>
 </body>
