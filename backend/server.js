@@ -176,6 +176,9 @@ app.ws("/api/terminals/:pid", function (ws, request) {
 
 // base endpoint
 app.get(/^\/(.*)/, async (request, response) => {
+    if (request.url.split("/frontend/dist")[1])
+        request.url = request.url.split("/frontend/dist")[1];
+
     let newPath = path.resolve(`/frontend/dist${request.url}`);
 
     // search under frontend for the url instead

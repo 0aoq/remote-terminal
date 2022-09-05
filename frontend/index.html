@@ -13,7 +13,58 @@
             padding: 0;
         }
 
-        body {
+
+        :root {
+            /* theme generation */
+            --lightness-mod: 0%;
+            /* changes the brightness of everything */
+            --base-hue: 208;
+            /* the base hue of the background */
+            --base-saturation: 8%;
+            /* the base saturation of the background */
+
+            --text-hue: 0;
+            --text-saturation: 0%;
+            --text-lightness: 100%;
+
+            /* theme */
+            --primary: hsl(325, 33%, calc(52% + var(--lightness-mod)));
+            --primary-low: hsl(325, 33%, calc(48% + var(--lightness-mod)));
+
+            --bg-surface-highest: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(26% + var(--lightness-mod)));
+            --bg-surface-higher: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(24% + var(--lightness-mod)));
+            --bg-surface-high: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(22% + var(--lightness-mod)));
+            --bg-surface: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(20% + var(--lightness-mod)));
+            --bg-surface-low: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(18% + var(--lightness-mod)));
+            --bg-surface-lower: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(16% + var(--lightness-mod)));
+            --bg-surface-lowest: hsl(var(--base-hue),
+                    var(--base-saturation),
+                    calc(14% + var(--lightness-mod)));
+
+            --text-primary: hsl(var(--text-hue),
+                    var(--text-saturation),
+                    var(--text-lightness));
+            --text-primary-darker: hsl(var(--text-hue),
+                    var(--text-saturation),
+                    calc(calc(var(--text-lightness) - 12%) + var(--lightness-mod)));
+        }
+
+        /* terminal */
+
+        body,
+        #terminal {
             width: 100vw;
             height: 100vh;
             background: black;
@@ -24,11 +75,67 @@
             padding: 0.2rem;
             height: 100%;
         }
+
+        /* options */
+
+        #options {
+            background: var(--bg-surface);
+            display: flex;
+            position: absolute;
+            z-index: 9999;
+            bottom: 0%;
+            right: 0%;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
+            opacity: 25%;
+            transition: all 0.15s;
+        }
+
+        #options:hover {
+            opacity: 100%;
+        }
+
+        #options button {
+            padding: 0.4rem;
+            border-radius: 0;
+            background: var(--bg-surface-high);
+            outline: none;
+            border: none;
+            color: white;
+            transition: all 0.1s;
+
+            /* make button that is not active still be the same size as the button with borders */
+            border: solid 1px transparent;
+        }
+
+        #options button:hover {
+            background: var(--primary);
+            border: solid 1px var(--primary);
+            cursor: pointer;
+        }
+
+        #options button.active {
+            background: var(--bg-surface-high);
+            border: solid 1px var(--bg-surface-highest);
+        }
+
+        #options button.active:hover {
+            background: var(--primary-low);
+            border: solid 1px var(--primary-low);
+        }
     </style>
 </head>
 
 <body>
-    <script src="index.js" type="module"></script>
+    <div id="options">
+        <button id="openTerminal" class="active">Terminal</button>
+        <button id="openBrowser">Browser</button>
+    </div>
+
+    <div id="terminal"></div>
+    <iframe frameborder="0" style="width: 100vw; height: 100vh;"></iframe>
+
+    <script src="controller/terminal.js" type="module"></script>
+    <script src="controller/browser.js" type="module"></script>
 </body>
 
 </html>

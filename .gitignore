@@ -2,3 +2,4 @@ node_modules/
 frontend/dist/
 rt-log/*.log
 out/
+electron/extensions/

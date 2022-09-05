@@ -2,7 +2,7 @@ import { WebLinksAddon } from "xterm-addon-web-links";
 import { FitAddon } from "xterm-addon-fit";
 
 import xtermCSS from "xterm/css/xterm.css";
-import * as command from "./command/execute";
+import * as command from "../command/execute";
 import xterm from "xterm";
 
 // define theme
@@ -73,7 +73,7 @@ const terminal = new xterm.Terminal({
     fontSize: 14,
 });
 
-terminal.open(document.body);
+terminal.open(document.querySelector("#terminal"));
 terminal.focus();
 
 const fitAddon = new FitAddon();
