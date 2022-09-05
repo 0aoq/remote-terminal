@@ -4,7 +4,6 @@ import { FitAddon } from "xterm-addon-fit";
 import xtermCSS from "xterm/css/xterm.css";
 import * as command from "./command/execute";
 import xterm from "xterm";
-import { json } from "stream/consumers";
 
 // define theme
 function hslToHex(h, s, l) {
@@ -62,7 +61,7 @@ const theme = {
 
 // create terminal
 const terminal = new xterm.Terminal({
-    fontFamily: '"Source Code Pro", "Cascadia Code", Menlo, monospace',
+    fontFamily: '"Source Code Pro", "Droid Sans Mono", "monospace", monospace',
     rightClickSelectsWord: true,
     altClickMovesCursor: true,
     rendererType: "canvas",
@@ -175,11 +174,16 @@ function b2ab(buffer) {
         socket.addEventListener("message", (ev) => {
             function runData(data) {
                 if (data.t === "PTY_DATA") {
+                    const decodeUTF8 = (input) =>
+                        decodeURIComponent(escape(input));
+
                     // post data to terminal
                     data = data.d;
 
                     terminal.write(
-                        data.type === "Buffer" ? ab2s(b2ab(data.data)) : data
+                        data.type === "Buffer"
+                            ? decodeUTF8(ab2s(b2ab(data.data)))
+                            : decodeUTF8(data)
                     );
                 } else if (data.t === "PTY_EXIT") {
                     // handle exit (close page)
