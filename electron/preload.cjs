@@ -20,7 +20,7 @@ onload = () => {
     setInterval(() => {
         for (let a of document.querySelectorAll("a")) {
             // switch all https links into rtss
-            a.href = a.href.replaceAll("https://", "rtss://");
+            // a.href = a.href.replaceAll("https://", "rtss://");
 
             // whenever the link is hovered show a window in the bottom left with the href (electron doesn't do this automatically)
             if (!anchorsWithListeners.includes(a)) {
