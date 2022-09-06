@@ -17,6 +17,9 @@ const fs = require("node:fs");
 if (!fs.existsSync(path.resolve(__dirname, "extensions")))
     fs.mkdirSync(path.resolve(__dirname, "extensions"));
 
+const fetch = (...args) =>
+    import("node-fetch").then(({ default: fetch }) => fetch(...args));
+
 let childprocess;
 
 let win = null;
@@ -35,29 +38,50 @@ function createWindow() {
     win = window; // doing this will force browser autocomplete for window.
 
     // remote terminal transport protocol
-    protocol.registerHttpProtocol("rts", (request, callback) => {
-        let httpProtocol = "http";
-        let rtsProtocol = "rts";
-
-        const url = request.url.split(`${rtsProtocol}//`)[1];
+    const registerRTS = (httpProtocol, rtsProtocol, request, callback) => {
+        const url = request.url.split(`${rtsProtocol}://`)[1];
 
         request.url = `${httpProtocol}://${url}`;
         request.session = null;
 
         callback(request);
+    };
+
+    protocol.registerHttpProtocol("rts", (request, callback) => {
+        let httpProtocol = "http";
+        let rtsProtocol = "rts";
+
+        registerRTS(httpProtocol, rtsProtocol, request, callback);
     });
 
     protocol.registerHttpProtocol("rtss", (request, callback) => {
         let httpProtocol = "https";
         let rtsProtocol = "rtss";
-        
-        const url = request.url.split(`${rtsProtocol}//`)[1];
 
-        request.url = `${httpProtocol}://${url}`;
-        request.session = null;
-
-        callback(request);
+        registerRTS(httpProtocol, rtsProtocol, request, callback);
     });
+
+    let unwantedHosts = ["doubleclick.net"];
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+        (details, callback) => {
+            if (unwantedHosts.includes(new URL(details.url).hostname)) {
+                // stop unwanted host connections
+                console.log(
+                    `\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[31m Blocked connection to unwanted host! ${details.url}\x1b[0m`
+                );
+
+                callback({
+                    cancel: true,
+                });
+            } else {
+                // not ad
+                details.requestHeaders["X-RT-TUNNEL-INTERCEPT-TIME"] =
+                    new Date().toISOString();
+
+                callback(details);
+            }
+        }
+    );
 
     // create menu
     const menu = [
@@ -154,6 +178,31 @@ function createWindow() {
                 },
             }),
 
+            new MenuItem({
+                label: "History",
+                submenu: [
+                    new MenuItem({
+                        label: "Back",
+                        click: async () => {
+                            event.sender.send(
+                                "context-command",
+                                "history-back"
+                            );
+                        },
+                    }),
+
+                    new MenuItem({
+                        label: "Forward",
+                        click: async () => {
+                            event.sender.send(
+                                "context-command",
+                                "history-forward"
+                            );
+                        },
+                    }),
+                ],
+            }),
+
             new MenuItem({ type: "separator" }),
         ];
     });
@@ -245,7 +294,7 @@ function createWindow() {
         console.log("\x1b[1m\x1b[35m⬢ ~ \x1b[1m\x1b[32m Client loaded!\x1b[0m");
 
         window.loadURL("http://localhost:3057/?electron");
-    }, 150);
+    }, 250);
 }
 
 app.whenReady().then(() => {
