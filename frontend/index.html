@@ -75,67 +75,14 @@
             padding: 0.2rem;
             height: 100%;
         }
-
-        /* options */
-
-        #options {
-            background: var(--bg-surface);
-            display: flex;
-            position: absolute;
-            z-index: 9999;
-            bottom: 0%;
-            right: 0%;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.25);
-            opacity: 25%;
-            transition: all 0.15s;
-        }
-
-        #options:hover {
-            opacity: 100%;
-        }
-
-        #options button {
-            padding: 0.4rem;
-            border-radius: 0;
-            background: var(--bg-surface-high);
-            outline: none;
-            border: none;
-            color: white;
-            transition: all 0.1s;
-
-            /* make button that is not active still be the same size as the button with borders */
-            border: solid 1px transparent;
-        }
-
-        #options button:hover {
-            background: var(--primary);
-            border: solid 1px var(--primary);
-            cursor: pointer;
-        }
-
-        #options button.active {
-            background: var(--bg-surface-high);
-            border: solid 1px var(--bg-surface-highest);
-        }
-
-        #options button.active:hover {
-            background: var(--primary-low);
-            border: solid 1px var(--primary-low);
-        }
     </style>
 </head>
 
 <body>
-    <div id="options">
-        <button id="openTerminal" class="active">Terminal</button>
-        <button id="openBrowser">Browser</button>
-    </div>
-
     <div id="terminal"></div>
     <iframe frameborder="0" style="width: 100vw; height: 100vh;"></iframe>
 
     <script src="controller/terminal.js" type="module"></script>
-    <script src="controller/browser.js" type="module"></script>
 </body>
 
 </html>
