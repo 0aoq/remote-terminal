@@ -16,7 +16,7 @@
   "devDependencies": {
     "electron": "^22.3.25",
     "electron-packager": "^16.0.0",
-    "vite": "^3.2.7"
+    "vite": "^3.2.8"
   },
   "dependencies": {
     "express": "^4.18.1",
